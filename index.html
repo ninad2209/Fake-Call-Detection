@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fake Call Detector by Ninad</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#07090c;
+  --bg2:#0c1018;
+  --surface:#101620;
+  --surface2:#151e2a;
+  --border:rgba(56,189,248,0.12);
+  --border2:rgba(56,189,248,0.28);
+  --blue:#38bdf8;
+  --blue2:#7dd3fc;
+  --red:#f87171;
+  --red2:#fca5a5;
+  --green:#34d399;
+  --green2:#6ee7b7;
+  --yellow:#fbbf24;
+  --dim:#4a6278;
+  --text:#c4d8e8;
+  --text2:#6a8a9e;
+  --mono:'Share Tech Mono',monospace;
+  --sans:'Syne',sans-serif;
+}
+
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* scanlines */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.03) 3px,rgba(0,0,0,0.03) 4px);
+  pointer-events:none;z-index:9999;
+}
+
+/* ── HEADER ───────────────────────────────── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem 3rem;
+  border-bottom:1px solid var(--border);
+  background:rgba(7,9,12,0.9);
+  backdrop-filter:blur(16px);
+  position:sticky;top:0;z-index:100;
+}
+
+.logo{
+  font-family:var(--mono);
+  font-size:0.9rem;
+  color:var(--blue);
+  letter-spacing:0.1em;
+  display:flex;align-items:center;gap:10px;
+}
+
+.logo-dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--blue);
+  animation:pulse 2s infinite;
+}
+
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,0.5)}
+  50%{box-shadow:0 0 0 6px rgba(56,189,248,0)}
+}
+
+.header-tag{
+  font-family:var(--mono);
+  font-size:0.68rem;
+  color:var(--dim);
+  letter-spacing:0.12em;
+  border:1px solid var(--border);
+  padding:4px 12px;
+}
+
+/* ── MAIN LAYOUT ──────────────────────────── */
+main{
+  max-width:920px;
+  margin:0 auto;
+  padding:3.5rem 2rem 6rem;
+}
+
+/* ── PAGE TITLE ───────────────────────────── */
+.page-title{
+  text-align:center;
+  margin-bottom:3rem;
+  animation:fadeUp 0.6s ease both;
+}
+
+.page-title h1{
+  font-family:var(--sans);
+  font-size:clamp(2rem,5vw,3.4rem);
+  font-weight:800;
+  color:#fff;
+  line-height:1.1;
+  letter-spacing:-0.03em;
+}
+
+.page-title h1 em{
+  font-style:normal;
+  color:var(--blue);
+}
+
+.page-title p{
+  margin-top:0.8rem;
+  font-family:var(--mono);
+  font-size:0.78rem;
+  color:var(--text2);
+  letter-spacing:0.07em;
+}
+
+/* ── INPUT PANEL ──────────────────────────── */
+.input-panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  padding:2rem;
+  margin-bottom:1.5rem;
+  animation:fadeUp 0.6s 0.1s ease both;
+  position:relative;
+  overflow:hidden;
+}
+
+.input-panel::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--blue),transparent);
+  animation:scanH 3s linear infinite;
+}
+
+@keyframes scanH{
+  0%{transform:translateX(-100%)}
+  100%{transform:translateX(100%)}
+}
+
+.panel-label{
+  font-family:var(--mono);
+  font-size:0.68rem;
+  color:var(--blue);
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  margin-bottom:1rem;
+  display:flex;align-items:center;gap:8px;
+}
+
+.panel-label::before{
+  content:'';
+  width:20px;height:1px;background:var(--blue);
+}
+
+textarea{
+  width:100%;
+  min-height:140px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:0.88rem;
+  line-height:1.7;
+  padding:1rem 1.25rem;
+  resize:vertical;
+  outline:none;
+  transition:border-color 0.2s;
+  letter-spacing:0.02em;
+}
+
+textarea::placeholder{color:var(--dim)}
+textarea:focus{border-color:var(--border2)}
+
+.char-counter{
+  font-family:var(--mono);
+  font-size:0.68rem;
+  color:var(--dim);
+  text-align:right;
+  margin-top:0.5rem;
+  letter-spacing:0.06em;
+}
+
+/* ── SAMPLE PILLS ─────────────────────────── */
+.sample-section{
+  margin-top:1.25rem;
+  padding-top:1.25rem;
+  border-top:1px solid var(--border);
+}
+
+.sample-label{
+  font-family:var(--mono);
+  font-size:0.65rem;
+  color:var(--dim);
+  letter-spacing:0.12em;
+  margin-bottom:0.75rem;
+}
+
+.samples{display:flex;flex-wrap:wrap;gap:0.5rem}
+
+.sample-pill{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  color:var(--text2);
+  background:var(--bg2);
+  border:1px solid var(--border);
+  padding:5px 12px;
+  cursor:pointer;
+  letter-spacing:0.04em;
+  transition:border-color 0.2s,color 0.2s,background 0.2s;
+  white-space:nowrap;
+}
+
+.sample-pill:hover{
+  border-color:var(--border2);
+  color:var(--blue);
+  background:rgba(56,189,248,0.04);
+}
+
+.sample-pill.fake{ color:var(--red); border-color:rgba(248,113,113,0.2); }
+.sample-pill.fake:hover{ background:rgba(248,113,113,0.04); border-color:rgba(248,113,113,0.4); }
+.sample-pill.real{ color:var(--green); border-color:rgba(52,211,153,0.2); }
+.sample-pill.real:hover{ background:rgba(52,211,153,0.04); border-color:rgba(52,211,153,0.4); }
+
+/* ── ANALYZE BTN ──────────────────────────── */
+.analyze-row{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:1.5rem;
+  flex-wrap:wrap;
+  gap:1rem;
+}
+
+.model-badges{display:flex;gap:0.5rem;flex-wrap:wrap}
+
+.badge{
+  font-family:var(--mono);
+  font-size:0.65rem;
+  letter-spacing:0.1em;
+  padding:4px 10px;
+  border:1px solid;
+}
+
+.badge-lr{color:var(--blue);border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.05)}
+.badge-svm{color:var(--yellow);border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.05)}
+
+.btn-analyze{
+  font-family:var(--mono);
+  font-size:0.82rem;
+  letter-spacing:0.1em;
+  padding:13px 32px;
+  background:var(--blue);
+  color:#040912;
+  border:none;
+  cursor:pointer;
+  font-weight:700;
+  transition:background 0.2s,transform 0.15s;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));
+  position:relative;
+  overflow:hidden;
+}
+
+.btn-analyze:hover:not(:disabled){background:#7dd3fc;transform:translateY(-1px)}
+.btn-analyze:disabled{opacity:0.5;cursor:not-allowed}
+.btn-analyze:active:not(:disabled){transform:scale(0.98)}
+
+/* spinner inside btn */
+.btn-analyze .spinner{
+  display:none;
+  width:14px;height:14px;
+  border:2px solid rgba(4,9,18,0.3);
+  border-top-color:#040912;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  vertical-align:middle;
+  margin-right:6px;
+}
+
+.btn-analyze.loading .spinner{display:inline-block}
+.btn-analyze.loading .btn-text{opacity:0.6}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESULTS ──────────────────────────────── */
+#results{
+  display:none;
+  animation:fadeUp 0.5s ease both;
+}
+
+.results-header{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:1.25rem;
+}
+
+.results-header h2{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  color:var(--dim);
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+}
+
+.results-divider{flex:1;height:1px;background:var(--border)}
+
+/* ── VERDICT BANNER ───────────────────────── */
+.verdict-banner{
+  padding:1.75rem 2rem;
+  border:1px solid;
+  margin-bottom:1.25rem;
+  display:flex;align-items:center;gap:1.5rem;
+  position:relative;
+  overflow:hidden;
+}
+
+.verdict-banner.fake{
+  background:rgba(248,113,113,0.05);
+  border-color:rgba(248,113,113,0.3);
+}
+
+.verdict-banner.real{
+  background:rgba(52,211,153,0.05);
+  border-color:rgba(52,211,153,0.3);
+}
+
+.verdict-banner.split{
+  background:rgba(251,191,36,0.05);
+  border-color:rgba(251,191,36,0.3);
+}
+
+.verdict-icon{
+  font-size:2.5rem;
+  flex-shrink:0;
+  line-height:1;
+}
+
+.verdict-text{}
+
+.verdict-label{
+  font-family:var(--mono);
+  font-size:0.65rem;
+  letter-spacing:0.14em;
+  color:var(--dim);
+  margin-bottom:0.3rem;
+}
+
+.verdict-main{
+  font-family:var(--sans);
+  font-size:1.8rem;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:-0.02em;
+}
+
+.verdict-banner.fake  .verdict-main{color:var(--red)}
+.verdict-banner.real  .verdict-main{color:var(--green)}
+.verdict-banner.split .verdict-main{color:var(--yellow)}
+
+.verdict-sub{
+  font-family:var(--mono);
+  font-size:0.75rem;
+  color:var(--text2);
+  margin-top:0.4rem;
+}
+
+.verdict-banner::after{
+  content:'';
+  position:absolute;right:-30px;top:50%;
+  transform:translateY(-50%);
+  font-family:var(--sans);
+  font-size:8rem;
+  font-weight:800;
+  opacity:0.04;
+  line-height:1;
+  white-space:nowrap;
+}
+
+.verdict-banner.fake::after{content:'FAKE';color:var(--red)}
+.verdict-banner.real::after{content:'REAL';color:var(--green)}
+.verdict-banner.split::after{content:'SPLIT';color:var(--yellow)}
+
+/* ── MODEL CARDS ──────────────────────────── */
+.model-cards{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1rem;
+  margin-bottom:1.25rem;
+}
+
+.model-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  padding:1.5rem;
+  position:relative;
+  overflow:hidden;
+}
+
+.mc-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:1.25rem;
+}
+
+.mc-name{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.12em;
+  color:var(--text2);
+}
+
+.mc-badge{
+  font-family:var(--mono);
+  font-size:0.62rem;
+  padding:3px 8px;
+  border:1px solid;
+}
+
+.mc-badge.lr{color:var(--blue);border-color:rgba(56,189,248,0.4)}
+.mc-badge.svm{color:var(--yellow);border-color:rgba(251,191,36,0.4)}
+
+.mc-result{
+  font-family:var(--sans);
+  font-size:1.3rem;
+  font-weight:800;
+  margin-bottom:0.25rem;
+  letter-spacing:-0.01em;
+}
+
+.mc-result.fake{color:var(--red)}
+.mc-result.real{color:var(--green)}
+
+.mc-conf{
+  font-family:var(--mono);
+  font-size:0.68rem;
+  color:var(--dim);
+  margin-bottom:0.9rem;
+}
+
+.mc-bar-track{
+  height:4px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+
+.mc-bar-fill{
+  height:100%;
+  transition:width 0.8s cubic-bezier(0.4,0,0.2,1);
+  width:0;
+}
+
+.mc-bar-fill.fake{background:var(--red)}
+.mc-bar-fill.real{background:var(--green)}
+
+.mc-accent{
+  position:absolute;
+  bottom:0;left:0;
+  height:2px;width:100%;
+}
+
+.mc-accent.lr{background:linear-gradient(90deg,var(--blue),transparent)}
+.mc-accent.svm{background:linear-gradient(90deg,var(--yellow),transparent)}
+
+/* ── ANALYSIS PANEL ───────────────────────── */
+.analysis-panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  padding:1.5rem;
+}
+
+.ap-title{
+  font-family:var(--mono);
+  font-size:0.68rem;
+  color:var(--dim);
+  letter-spacing:0.12em;
+  margin-bottom:1rem;
+  padding-bottom:0.75rem;
+  border-bottom:1px solid var(--border);
+}
+
+.ap-rows{display:flex;flex-direction:column;gap:0.6rem}
+
+.ap-row{
+  display:flex;align-items:center;gap:1rem;
+  font-family:var(--mono);
+  font-size:0.78rem;
+}
+
+.ap-key{color:var(--text2);min-width:160px;flex-shrink:0}
+.ap-val{color:var(--text);letter-spacing:0.04em}
+.ap-val.highlight{color:var(--blue)}
+
+/* ── RESET ────────────────────────────────── */
+.reset-row{
+  margin-top:1.25rem;
+  text-align:right;
+}
+
+.btn-reset{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.1em;
+  padding:8px 20px;
+  background:transparent;
+  color:var(--dim);
+  border:1px solid var(--border);
+  cursor:pointer;
+  transition:color 0.2s,border-color 0.2s;
+}
+
+.btn-reset:hover{color:var(--text);border-color:var(--border2)}
+
+/* ── API CONFIG ───────────────────────────── */
+.api-config{
+  background:var(--surface);
+  border:1px solid var(--border);
+  padding:1.25rem 1.5rem;
+  margin-bottom:1.5rem;
+  animation:fadeUp 0.6s 0.05s ease both;
+}
+
+.config-row{
+  display:flex;align-items:center;gap:1rem;
+  flex-wrap:wrap;
+}
+
+.config-label{
+  font-family:var(--mono);
+  font-size:0.68rem;
+  color:var(--dim);
+  letter-spacing:0.1em;
+  white-space:nowrap;
+}
+
+input[type=text]{
+  flex:1;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:0.8rem;
+  padding:8px 12px;
+  outline:none;
+  min-width:0;
+  transition:border-color 0.2s;
+  letter-spacing:0.02em;
+}
+
+input[type=text]:focus{border-color:var(--border2)}
+input[type=text]::placeholder{color:var(--dim)}
+
+.api-status{
+  font-family:var(--mono);
+  font-size:0.65rem;
+  letter-spacing:0.08em;
+  padding:4px 10px;
+  border:1px solid;
+  white-space:nowrap;
+}
+
+.api-status.demo{color:var(--yellow);border-color:rgba(251,191,36,0.3)}
+.api-status.connected{color:var(--green);border-color:rgba(52,211,153,0.3)}
+
+/* ── ERROR BOX ────────────────────────────── */
+.error-box{
+  background:rgba(248,113,113,0.05);
+  border:1px solid rgba(248,113,113,0.3);
+  padding:1rem 1.25rem;
+  font-family:var(--mono);
+  font-size:0.8rem;
+  color:var(--red2);
+  margin-top:1rem;
+  display:none;
+}
+
+/* ── HISTORY ──────────────────────────────── */
+.history-section{
+  margin-top:3rem;
+  animation:fadeUp 0.6s 0.15s ease both;
+}
+
+.history-title{
+  font-family:var(--mono);
+  font-size:0.68rem;
+  color:var(--dim);
+  letter-spacing:0.14em;
+  margin-bottom:1rem;
+  display:flex;align-items:center;gap:10px;
+}
+
+.history-title::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+#historyList{display:flex;flex-direction:column;gap:0.5rem}
+
+.history-item{
+  display:flex;align-items:center;gap:1rem;
+  padding:0.75rem 1rem;
+  background:var(--surface);
+  border:1px solid var(--border);
+  cursor:pointer;
+  transition:border-color 0.2s;
+  font-family:var(--mono);
+  font-size:0.75rem;
+}
+
+.history-item:hover{border-color:var(--border2)}
+
+.hi-tag{
+  padding:2px 8px;
+  border:1px solid;
+  font-size:0.62rem;
+  letter-spacing:0.08em;
+  flex-shrink:0;
+}
+
+.hi-tag.fake{color:var(--red);border-color:rgba(248,113,113,0.4)}
+.hi-tag.real{color:var(--green);border-color:rgba(52,211,153,0.4)}
+.hi-tag.split{color:var(--yellow);border-color:rgba(251,191,36,0.4)}
+
+.hi-text{
+  color:var(--text2);
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.hi-time{color:var(--dim);font-size:0.65rem;flex-shrink:0}
+
+/* ── FOOTER ───────────────────────────────── */
+footer{
+  text-align:center;
+  padding:2rem;
+  border-top:1px solid var(--border);
+  font-family:var(--mono);
+  font-size:0.65rem;
+  color:var(--dim);
+  letter-spacing:0.08em;
+}
+
+/* ── UTILS ────────────────────────────────── */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:none}
+}
+
+@media(max-width:640px){
+  header{padding:1rem 1.25rem}
+  main{padding:2rem 1.25rem 5rem}
+  .model-cards{grid-template-columns:1fr}
+  .analyze-row{flex-direction:column;align-items:flex-start}
+  .btn-analyze{width:100%;text-align:center}
+  .config-row{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    FAKECALL_DETECT
+  </div>
+  <div class="header-tag">v1.0 · LR + SVM ENSEMBLE</div>
+</header>
+
+<main>
+
+  <!-- PAGE TITLE -->
+  <div class="page-title">
+    <h1>Is This Call <em>Real</em>?</h1>
+    <p>// PASTE CALL TRANSCRIPT · LOGISTIC REGRESSION + SVM · DUAL MODEL ANALYSIS</p>
+  </div>
+
+  <!-- API CONFIG -->
+  <div class="api-config">
+    <div class="config-row">
+      <span class="config-label">BACKEND URL</span>
+      <input type="text" id="apiUrl" placeholder="http://localhost:5000/predict" value="http://localhost:5000/predict" />
+      <span class="api-status demo" id="apiStatus">DEMO MODE</span>
+    </div>
+  </div>
+
+  <!-- INPUT PANEL -->
+  <div class="input-panel">
+    <div class="panel-label">CALL TRANSCRIPT INPUT</div>
+
+    <textarea id="callText" placeholder="Paste or type the call transcript here...
+
+e.g. &quot;Congratulations! You have won a lottery prize. Please provide your bank details immediately to claim your reward. Call us back urgently at this number to avoid losing your prize.&quot;"
+      oninput="updateCounter()"></textarea>
+
+    <div class="char-counter"><span id="charCount">0</span> characters</div>
+
+    <div class="sample-section">
+      <div class="sample-label">// LOAD SAMPLE TEXT —</div>
+      <div class="samples">
+        <div class="sample-pill fake" onclick="loadSample('fake1')">⚠ Lottery Scam</div>
+        <div class="sample-pill fake" onclick="loadSample('fake2')">⚠ Bank Fraud</div>
+        <div class="sample-pill fake" onclick="loadSample('fake3')">⚠ IRS Threat</div>
+        <div class="sample-pill real" onclick="loadSample('real1')">✓ Doctor Appt</div>
+        <div class="sample-pill real" onclick="loadSample('real2')">✓ Friend Call</div>
+        <div class="sample-pill real" onclick="loadSample('real3')">✓ Delivery Update</div>
+      </div>
+    </div>
+
+    <div class="analyze-row">
+      <div class="model-badges">
+        <span class="badge badge-lr">LOGISTIC REGRESSION</span>
+        <span class="badge badge-svm">SUPPORT VECTOR MACHINE</span>
+      </div>
+      <button class="btn-analyze" id="analyzeBtn" onclick="analyze()">
+        <span class="spinner"></span>
+        <span class="btn-text">ANALYZE CALL</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- RESULTS -->
+  <div id="results">
+
+    <div class="results-header">
+      <h2>ANALYSIS RESULTS</h2>
+      <div class="results-divider"></div>
+    </div>
+
+    <!-- VERDICT BANNER -->
+    <div class="verdict-banner" id="verdictBanner">
+      <div class="verdict-icon" id="verdictIcon"></div>
+      <div class="verdict-text">
+        <div class="verdict-label">OVERALL VERDICT</div>
+        <div class="verdict-main" id="verdictMain"></div>
+        <div class="verdict-sub" id="verdictSub"></div>
+      </div>
+    </div>
+
+    <!-- MODEL CARDS -->
+    <div class="model-cards">
+
+      <div class="model-card">
+        <div class="mc-accent lr"></div>
+        <div class="mc-header">
+          <span class="mc-name">LOGISTIC REGRESSION</span>
+          <span class="mc-badge lr">LR</span>
+        </div>
+        <div class="mc-result" id="lrResult"></div>
+        <div class="mc-conf" id="lrConf"></div>
+        <div class="mc-bar-track">
+          <div class="mc-bar-fill" id="lrBar"></div>
+        </div>
+      </div>
+
+      <div class="model-card">
+        <div class="mc-accent svm"></div>
+        <div class="mc-header">
+          <span class="mc-name">SUPPORT VECTOR MACHINE</span>
+          <span class="mc-badge svm">SVM</span>
+        </div>
+        <div class="mc-result" id="svmResult"></div>
+        <div class="mc-conf" id="svmConf"></div>
+        <div class="mc-bar-track">
+          <div class="mc-bar-fill" id="svmBar"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ANALYSIS DETAIL -->
+    <div class="analysis-panel">
+      <div class="ap-title">// ANALYSIS_DETAILS.LOG</div>
+      <div class="ap-rows">
+        <div class="ap-row">
+          <span class="ap-key">INPUT_LENGTH</span>
+          <span class="ap-val" id="detailLen">—</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-key">WORD_COUNT</span>
+          <span class="ap-val" id="detailWords">—</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-key">LR_PREDICTION</span>
+          <span class="ap-val highlight" id="detailLR">—</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-key">SVM_PREDICTION</span>
+          <span class="ap-val highlight" id="detailSVM">—</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-key">CONSENSUS</span>
+          <span class="ap-val" id="detailConsensus">—</span>
+        </div>
+        <div class="ap-row">
+          <span class="ap-key">TIMESTAMP</span>
+          <span class="ap-val" id="detailTime">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="reset-row">
+      <button class="btn-reset" onclick="reset()">CLEAR &amp; RESET</button>
+    </div>
+
+  </div>
+
+  <!-- HISTORY -->
+  <div class="history-section" id="historySection" style="display:none">
+    <div class="history-title">RECENT ANALYSES</div>
+    <div id="historyList"></div>
+  </div>
+
+</main>
+
+<footer>FAKE CALL DETECTION SYSTEM · ML-POWERED · LR + SVM ENSEMBLE · BUILT WITH PYTHON &amp; SCIKIT-LEARN</footer>
+
+<script>
+// ── SAMPLE TEXTS ──────────────────────────────────────────
+const samples = {
+  fake1: "Congratulations! You have been selected as the lucky winner of our international lottery draw. Your phone number was randomly chosen. To claim your prize of one million dollars, you must provide your bank account details and pay a small processing fee immediately. Call back urgently or you will lose your prize forever.",
+  fake2: "This is an urgent message from your bank. We have detected suspicious activity on your account and it will be suspended in 24 hours. Please verify your account immediately by providing your account number, password and OTP. Press 1 now to speak with our security department before it is too late.",
+  fake3: "This is the IRS. There is an arrest warrant issued in your name for tax fraud. You owe back taxes and penalties. If you do not call us back immediately and make a payment using gift cards, law enforcement officers will arrive at your location within the hour. This is your final notice.",
+  real1: "Hi this is Dr. Smith's office calling to confirm your appointment tomorrow at 2 PM. Please remember to bring your insurance card and arrive 10 minutes early to fill out paperwork. If you need to reschedule please call us at your earliest convenience. Have a great day.",
+  real2: "Hey it is me just calling to check in and see how you are doing. We haven't spoken in a while and I was thinking we could catch up maybe grab coffee this weekend if you are free. Nothing urgent just wanted to hear your voice. Call me back when you get a chance.",
+  real3: "Hello this is a notification from your delivery service. Your package has been out for delivery today and will arrive between 2 and 6 PM. You do not need to be home as the driver will leave it at your door. Track your delivery using the link sent to your email."
+};
+
+// ── STATE ─────────────────────────────────────────────────
+let history = [];
+
+// ── HELPERS ──────────────────────────────────────────────
+function updateCounter() {
+  const v = document.getElementById('callText').value;
+  document.getElementById('charCount').textContent = v.length;
+}
+
+function loadSample(key) {
+  document.getElementById('callText').value = samples[key];
+  updateCounter();
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+function reset() {
+  document.getElementById('callText').value = '';
+  document.getElementById('charCount').textContent = '0';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = '// ERROR: ' + msg;
+  el.style.display = 'block';
+}
+
+// ── DEMO SIMULATION (when no backend) ─────────────────────
+function simulateAnalysis(text) {
+  // Simple keyword-based demo simulation
+  const fakeKeywords = ['lottery','prize','won','winner','bank details','account number','otp','irs','arrest','warrant','gift card','urgent','claim','free','immediate','suspended','password','tax fraud','verify','final notice','lucky','selected'];
+  const lower = text.toLowerCase();
+  const hits = fakeKeywords.filter(k => lower.includes(k)).length;
+  const total = text.split(/\s+/).length;
+
+  const fakeScore = Math.min(0.5 + (hits * 0.12) + (total < 30 ? 0 : 0.05), 0.97);
+  const realScore = 1 - fakeScore;
+
+  // Add slight disagreement occasionally for realism
+  const lrFake = fakeScore > 0.5;
+  const svmFake = hits > 2 ? lrFake : (fakeScore > 0.45 ? lrFake : !lrFake);
+
+  return {
+    lr_prediction: lrFake ? "Fake Call" : "Not a Fake Call",
+    svm_prediction: svmFake ? "Fake Call" : "Not a Fake Call",
+    lr_confidence: lrFake ? (fakeScore * 100).toFixed(1) : (realScore * 100).toFixed(1),
+    svm_confidence: svmFake ? Math.min((fakeScore * 100 + (Math.random()*6-3)), 98).toFixed(1) : Math.min((realScore * 100 + (Math.random()*6-3)), 98).toFixed(1),
+    demo: true
+  };
+}
+
+// ── MAIN ANALYZE ──────────────────────────────────────────
+async function analyze() {
+  const text = document.getElementById('callText').value.trim();
+  if (!text) { showError('Please enter call transcript text before analyzing.'); return; }
+  if (text.length < 10) { showError('Text too short. Please enter a more complete transcript.'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('errorBox').style.display = 'none';
+
+  const apiUrl = document.getElementById('apiUrl').value.trim();
+  let data;
+
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    data = await res.json();
+    document.getElementById('apiStatus').textContent = 'CONNECTED';
+    document.getElementById('apiStatus').className = 'api-status connected';
+  } catch(e) {
+    // Fall back to demo
+    await new Promise(r => setTimeout(r, 900 + Math.random()*600));
+    data = simulateAnalysis(text);
+    document.getElementById('apiStatus').textContent = 'DEMO MODE';
+    document.getElementById('apiStatus').className = 'api-status demo';
+  }
+
+  btn.classList.remove('loading');
+  btn.disabled = false;
+
+  renderResults(text, data);
+}
+
+// ── RENDER RESULTS ─────────────────────────────────────────
+function renderResults(text, data) {
+  const lrFake  = data.lr_prediction === "Fake Call";
+  const svmFake = data.svm_prediction === "Fake Call";
+  const bothFake = lrFake && svmFake;
+  const bothReal = !lrFake && !svmFake;
+  const split    = lrFake !== svmFake;
+
+  // Verdict banner
+  const banner = document.getElementById('verdictBanner');
+  banner.className = 'verdict-banner ' + (bothFake ? 'fake' : bothReal ? 'real' : 'split');
+  document.getElementById('verdictIcon').textContent = bothFake ? '🚨' : bothReal ? '✅' : '⚠️';
+
+  const verdictTexts = {
+    fake:  'FAKE CALL DETECTED',
+    real:  'CALL APPEARS GENUINE',
+    split: 'INCONCLUSIVE — REVIEW'
+  };
+  const type = bothFake ? 'fake' : bothReal ? 'real' : 'split';
+  document.getElementById('verdictMain').textContent = verdictTexts[type];
+  document.getElementById('verdictSub').textContent = bothFake
+    ? 'Both models agree: this transcript shows strong fraud indicators.'
+    : bothReal
+    ? 'Both models agree: no significant fraud patterns detected.'
+    : 'Models disagree. Manual review recommended for this call.';
+
+  // LR card
+  const lrResult = document.getElementById('lrResult');
+  lrResult.textContent = data.lr_prediction;
+  lrResult.className = 'mc-result ' + (lrFake ? 'fake' : 'real');
+  document.getElementById('lrConf').textContent = data.lr_confidence ? `CONFIDENCE: ${parseFloat(data.lr_confidence).toFixed(1)}%` : '';
+  const lrBar = document.getElementById('lrBar');
+  lrBar.className = 'mc-bar-fill ' + (lrFake ? 'fake' : 'real');
+  setTimeout(() => { lrBar.style.width = (data.lr_confidence ? Math.min(parseFloat(data.lr_confidence), 100) : (lrFake ? 82 : 76)) + '%'; }, 100);
+
+  // SVM card
+  const svmResult = document.getElementById('svmResult');
+  svmResult.textContent = data.svm_prediction;
+  svmResult.className = 'mc-result ' + (svmFake ? 'fake' : 'real');
+  document.getElementById('svmConf').textContent = data.svm_confidence ? `CONFIDENCE: ${parseFloat(data.svm_confidence).toFixed(1)}%` : '';
+  const svmBar = document.getElementById('svmBar');
+  svmBar.className = 'mc-bar-fill ' + (svmFake ? 'fake' : 'real');
+  setTimeout(() => { svmBar.style.width = (data.svm_confidence ? Math.min(parseFloat(data.svm_confidence), 100) : (svmFake ? 79 : 73)) + '%'; }, 200);
+
+  // Details
+  const now = new Date();
+  document.getElementById('detailLen').textContent = text.length + ' chars';
+  document.getElementById('detailWords').textContent = text.split(/\s+/).filter(Boolean).length + ' words';
+  document.getElementById('detailLR').textContent  = data.lr_prediction  + (data.demo ? ' (demo)' : '');
+  document.getElementById('detailSVM').textContent = data.svm_prediction + (data.demo ? ' (demo)' : '');
+  document.getElementById('detailConsensus').textContent = split ? 'SPLIT — models disagree' : 'UNANIMOUS — both models agree';
+  document.getElementById('detailTime').textContent = now.toLocaleTimeString();
+
+  // Show results
+  document.getElementById('results').style.display = 'block';
+
+  // Add to history
+  addHistory(text, type, data.lr_prediction, data.svm_prediction);
+}
+
+// ── HISTORY ───────────────────────────────────────────────
+function addHistory(text, type, lr, svm) {
+  history.unshift({ text, type, lr, svm, time: new Date().toLocaleTimeString() });
+  if (history.length > 8) history.pop();
+  renderHistory();
+  document.getElementById('historySection').style.display = 'block';
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = history.map((h, i) => `
+    <div class="history-item" onclick="reloadHistory(${i})">
+      <span class="hi-tag ${h.type}">${h.type.toUpperCase()}</span>
+      <span class="hi-text">${escHtml(h.text.substring(0, 80))}${h.text.length > 80 ? '…' : ''}</span>
+      <span class="hi-time">${h.time}</span>
+    </div>
+  `).join('');
+}
+
+function reloadHistory(i) {
+  document.getElementById('callText').value = history[i].text;
+  updateCounter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
